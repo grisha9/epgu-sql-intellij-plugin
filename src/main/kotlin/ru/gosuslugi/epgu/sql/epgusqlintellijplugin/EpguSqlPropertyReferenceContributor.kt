@@ -1,36 +1,40 @@
 package ru.gosuslugi.epgu.sql.epgusqlintellijplugin
 
 import com.intellij.openapi.util.TextRange
+import com.intellij.openapi.util.registry.Registry
 import com.intellij.patterns.PsiJavaPatterns
+import com.intellij.patterns.PsiMethodPattern
 import com.intellij.patterns.uast.injectionHostUExpression
 import com.intellij.psi.*
 import com.intellij.util.SmartList
-import java.util.Collections.singletonMap
+import ru.gosuslugi.epgu.sql.epgusqlintellijplugin.PlaceholderPropertyReference.Companion.create
 
 class EpguSqlPropertyReferenceContributor : PsiReferenceContributor() {
 
     override fun registerReferenceProviders(registrar: PsiReferenceRegistrar) {
         val injection = injectionHostUExpression()
+
+        for (psiMethodPattern in getMethodPatterns()) {
+            registrar.registerUastReferenceProvider(
+                injection.methodCallParameter(0, psiMethodPattern, true),
+                uastInjectionHostReferenceProvider { _, host -> createPlaceholderPropertiesReferences(host) },
+                PsiReferenceRegistrar.LOWER_PRIORITY
+            )
+        }
+    }
+
+    private fun getMethodPatterns(): List<PsiMethodPattern> {
         val getSqlMethodPattern = PsiJavaPatterns.psiMethod().withName("getSql")
-            .withParameterCount(1)
-            .withParameters(CommonClassNames.JAVA_LANG_STRING)
             .definedInClass("ru.atc.carcass.common.sql.SqlResolver")
-
-        val getSqlMethodPattern2 = PsiJavaPatterns.psiMethod().withName("getSql")
-            .withParameters(CommonClassNames.JAVA_LANG_STRING, "ru.gosuslugi.school.model.SchoolApiVersion")
-            .definedInClass("ru.gosuslugi.school.dao.SchemaSqlResolver")
-
-        registrar.registerUastReferenceProvider(
-            injection.methodCallParameter(0, getSqlMethodPattern, true),
-            uastInjectionHostReferenceProvider { _, host -> createPlaceholderPropertiesReferences(host) },
-            PsiReferenceRegistrar.LOWER_PRIORITY
-        )
-
-        registrar.registerUastReferenceProvider(
-            injection.methodCallParameter(0, getSqlMethodPattern2, true),
-            uastInjectionHostReferenceProvider { _, host -> createPlaceholderPropertiesReferences(host) },
-            PsiReferenceRegistrar.LOWER_PRIORITY
-        )
+        try {
+            return Registry.stringValue("sql.support.classes")
+                .split(";")
+                .filter { it.isNotEmpty() }
+                .map { PsiJavaPatterns.psiMethod().withName("getSql").definedInClass(it) }
+                .toList() + getSqlMethodPattern
+        } catch (e: Exception) {
+            return listOf(getSqlMethodPattern)
+        }
     }
 
     private fun createPlaceholderPropertiesReferences(host: PsiLanguageInjectionHost): Array<PsiReference> {
@@ -38,22 +42,15 @@ class EpguSqlPropertyReferenceContributor : PsiReferenceContributor() {
     }
 
     private fun createPlaceholderPropertiesReferences(
-        textRanges: Map<TextRange, String>,
-        valueElement: PsiElement?
+        textRanges: Pair<TextRange, String>, valueElement: PsiElement
     ): Array<PsiReference> {
-        if (valueElement == null || textRanges.isEmpty()) return PsiReference.EMPTY_ARRAY
-
-        val references = SmartList<PsiReference>()
-
-        for ((textRange, info) in textRanges) {
-            references.add(PlaceholderPropertyReference.create(valueElement, textRange, info))
-        }
-        return references.toTypedArray()
+        if (textRanges.second.isEmpty()) return PsiReference.EMPTY_ARRAY
+        return SmartList<PsiReference>(create(valueElement, textRanges.first, textRanges.second)).toTypedArray()
     }
 
-    private fun getFullTextRange(element: PsiElement): Map<TextRange, String> {
+    private fun getFullTextRange(element: PsiElement): Pair<TextRange, String> {
         val text = ElementManipulators.getValueText(element)
         val textRange = ElementManipulators.getValueTextRange(element)
-        return singletonMap(textRange, text)
+        return Pair(textRange, text)
     }
 }

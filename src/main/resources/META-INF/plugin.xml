@@ -30,5 +30,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <psi.referenceContributor language="JAVA"
                                   implementation="ru.gosuslugi.epgu.sql.epgusqlintellijplugin.EpguSqlPropertyReferenceContributor"/>
+        <registryKey key="sql.support.classes" defaultValue="ru.gosuslugi.school.dao.SchemaSqlResolver"
+                     description="Support full classes names(delimiter;)"/>
     </extensions>
 </idea-plugin>

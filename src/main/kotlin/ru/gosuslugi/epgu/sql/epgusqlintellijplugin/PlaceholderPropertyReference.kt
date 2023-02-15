@@ -1,7 +1,5 @@
 package ru.gosuslugi.epgu.sql.epgusqlintellijplugin
 
-import com.intellij.codeInspection.LocalQuickFix
-import com.intellij.codeInspection.LocalQuickFixProvider
 import com.intellij.lang.properties.references.PropertiesPsiCompletionUtil
 import com.intellij.lang.properties.references.PropertyReferenceBase
 import com.intellij.lang.properties.xml.XmlPropertiesFile
@@ -14,7 +12,6 @@ import com.intellij.psi.PsiDirectory
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiManager
 import com.intellij.psi.xml.XmlFile
-import kotlin.collections.HashSet
 
 class PlaceholderPropertyReference private constructor(
     key: String, element: PsiElement, textRange: TextRange
@@ -29,11 +26,12 @@ class PlaceholderPropertyReference private constructor(
 
     override fun getPropertiesFiles(): List<XmlPropertiesFile> {
         val module = ModuleUtilCore.findModuleForPsiElement(element) ?: return emptyList()
-        return getConfigDirectories(module)
+        val toList = getConfigDirectories(module)
             .flatMap { it.files.toList() }
-            .filter { it is XmlFile && it.getName().endsWith("xml") }
-            .map { XmlPropertiesFileImpl(it as XmlFile) }
+            .filterIsInstance<XmlFile>()
+            .mapNotNull { XmlPropertiesFileImpl.getPropertiesFile(it) }
             .toList()
+        return toList
     }
 
     companion object {
