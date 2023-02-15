@@ -16,8 +16,18 @@ class EpguSqlPropertyReferenceContributor : PsiReferenceContributor() {
             .withParameters(CommonClassNames.JAVA_LANG_STRING)
             .definedInClass("ru.atc.carcass.common.sql.SqlResolver")
 
+        val getSqlMethodPattern2 = PsiJavaPatterns.psiMethod().withName("getSql")
+            .withParameters(CommonClassNames.JAVA_LANG_STRING, "ru.gosuslugi.school.model.SchoolApiVersion")
+            .definedInClass("ru.gosuslugi.school.dao.SchemaSqlResolver")
+
         registrar.registerUastReferenceProvider(
-            injection.methodCallParameter(0, getSqlMethodPattern, false),
+            injection.methodCallParameter(0, getSqlMethodPattern, true),
+            uastInjectionHostReferenceProvider { _, host -> createPlaceholderPropertiesReferences(host) },
+            PsiReferenceRegistrar.LOWER_PRIORITY
+        )
+
+        registrar.registerUastReferenceProvider(
+            injection.methodCallParameter(0, getSqlMethodPattern2, true),
             uastInjectionHostReferenceProvider { _, host -> createPlaceholderPropertiesReferences(host) },
             PsiReferenceRegistrar.LOWER_PRIORITY
         )
