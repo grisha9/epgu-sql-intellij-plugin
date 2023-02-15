@@ -1,0 +1,1 @@
+rootProject.name = "epgu-sql-intellij-plugin"
