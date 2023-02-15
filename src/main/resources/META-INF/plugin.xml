@@ -17,7 +17,7 @@
         Plugin for working with SqlResolver.<br>
 		<ul>
 		<li>navigate to sql statement from getSql method (via ctrl on queryName parameter click)</li>
-        <li>auto complition via ctrl+space on edit getSql#queryName parameter/</li>
+        <li>auto complition via ctrl+space on edit getSql#queryName parameter</li>
         </li>
         </ul>
         <br>
